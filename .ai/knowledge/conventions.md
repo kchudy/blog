@@ -36,8 +36,6 @@ under a different scheme.
 
 ## Commit message format
 
-<!-- Example — replace with what this project actually does. -->
-
 ```
 <issue-id>: <short summary in imperative mood>
 
@@ -49,10 +47,10 @@ Co-Authored-By: AI Orchestrator <ai-orchestrator@localhost>
 e.g.:
 
 ```
-DG-42: Add dark mode toggle to settings page
+DG-12: Add RSS feed for published posts
 
-Persists the preference in localStorage and respects prefers-color-scheme
-on first load when no preference has been set yet.
+Serves the 20 most recent published posts at /feed/ via Django's syndication
+framework (blog.feeds.LatestPostsFeed) — no custom feed-rendering code needed.
 
 Co-Authored-By: AI Orchestrator <ai-orchestrator@localhost>
 ```
@@ -61,4 +59,9 @@ The `Co-Authored-By` trailer is added automatically to commits made by the `@imp
 agent — leave it in place when amending or squashing such a commit, it's how the team can tell
 which changes were AI-assisted after the fact.
 
-<!-- Add real, project-specific entries below this line as they're noticed. -->
+<!-- Add real, project-specific entries below this line as they're noticed. This project is
+     greenfield — there's no implementation history yet to draw conventions from beyond the
+     two above, which come from .ai/coding-style.md's "Commit / branch conventions" section.
+     The first agent/human to notice a consistent, undocumented pattern in actual code (e.g. a
+     recurring way tests are structured, a naming quirk for template partials) should add it
+     here rather than leaving it to be rediscovered. -->

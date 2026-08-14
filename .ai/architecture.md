@@ -10,59 +10,63 @@
 
 ## Overview
 
-[2-4 sentences: the shape of the system at the highest level — e.g. "a single Next.js app
-backed by a Postgres database, with a separate worker process for async jobs, all behind an
-nginx reverse proxy."]
+Blog is a single Django monolith: one `web` process serves both the public site and the Django
+admin (used by authors to write and publish posts), backed by a single PostgreSQL database.
+There is no separate worker, queue, or cache — every request is handled synchronously by Django.
 
 ## Components
 
-<!-- One entry per deployable/runnable unit. Add or remove rows freely. -->
-
 | Component | Responsibility | Tech | Repo path |
 | --- | --- | --- | --- |
-| [e.g. `web`] | [e.g. serves the UI and REST API] | [e.g. Next.js] | [`apps/web`] |
-| [e.g. `worker`] | [e.g. processes background jobs from the queue] | [e.g. Python] | [`apps/worker`] |
-| [...] | [...] | [...] | [...] |
+| `web` | Serves public post list/detail pages, the RSS feed, and the Django admin (post authoring) | Django 5.2 + gunicorn, static files via WhiteNoise | `config/`, `blog/` |
+| `db` | Persistent storage for posts, tags, and authors (Django's `User` model) | PostgreSQL 17 | `docker-compose.yml` |
+
+A reverse proxy / TLS termination (nginx, Caddy, or whatever the hosting platform provides) sits
+in front of `web` in production but is not part of this repo — `web` itself serves plain HTTP.
 
 ## Data flow
 
-[Describe how a representative request or event moves through the system, end to end — e.g.
-"a browser POST hits `web`'s `/api/orders` route, which validates the payload, writes to
-Postgres, and publishes an `order.created` event to Redis; `worker` consumes that event and
-sends the confirmation email." Prefer describing 1-2 real flows over an abstract diagram —
-concrete beats generic here. Add a diagram (mermaid or otherwise) if the team maintains one.]
+Three representative flows:
+
+- **Reading a post:** a browser `GET /posts/<slug>/` hits Django's URLconf, which routes to
+  `blog.views.PostDetailView`. The view fetches the matching `Post` (404s if it doesn't exist or
+  isn't `published`), renders its Markdown `body` to sanitized HTML, and renders
+  `post_detail.html`.
+- **Publishing a post:** an author logs into `/admin/`, creates or edits a `Post` through
+  Django's built-in admin, and sets `status=published`. There is no custom authoring UI — the
+  admin *is* the CMS.
+- **Subscribing:** a `GET /feed/` hits `blog.feeds.LatestPostsFeed` (Django's syndication
+  framework), which queries the latest `published` posts and serves them as RSS — no custom
+  feed-rendering code needed.
 
 ```
-[optional ascii/mermaid diagram]
+Browser ──GET /posts/<slug>/──> Django URLconf ──> PostDetailView ──> Postgres (Post, Tag)
+                                                          │
+                                                          v
+                                                   post_detail.html
+
+Author ──login /admin/──> Django admin ──> Postgres (Post, Tag, User)
+
+Reader ──GET /feed/──> LatestPostsFeed ──> Postgres ──> RSS XML
 ```
 
 ## Key design decisions
 
-<!--
-  Short pointers, not full explanations — the "why" belongs in an ADR under .ai/decisions/
-  (see decisions/ADR-0001-template.md). This section is an index, so a reader can quickly find
-  which decisions shaped the current shape of things without re-deriving them.
--->
-
-- [Decision summary] — see `.ai/decisions/ADR-000N-*.md`
-- [Decision summary] — see `.ai/decisions/ADR-000N-*.md`
+No ADRs recorded yet — this is a greenfield project. The first `@architecture` run on a real
+issue should add entries here as decisions are made (see `.ai/decisions/ADR-0001-template.md`).
 
 ## External dependencies
 
-<!-- Third-party services/APIs this system talks to at runtime, and what happens if each is down. -->
-
-| Dependency | Used for | Failure mode / fallback |
-| --- | --- | --- |
-| [e.g. Stripe] | [e.g. payment processing] | [e.g. checkout disabled, queued retries] |
-| [...] | [...] | [...] |
+None yet. This is a self-contained Django + PostgreSQL application with no third-party runtime
+services. If a future feature needs one (e.g. an SMTP relay for author notifications, or object
+storage for images), add a row here describing what happens if it's unavailable.
 
 ## Known limitations
 
-<!--
-  Architectural weaknesses the team has accepted for now (not bugs — see
-  knowledge/known-issues.md for those). E.g. "single point of failure in X", "no horizontal
-  scaling of Y yet", "N+1 query pattern in Z, acceptable at current traffic."
--->
-
-- [Limitation 1]
-- [Limitation 2]
+- Single Postgres instance is a single point of failure — acceptable at current scale; would
+  need a managed/replicated database before this could tolerate a DB outage.
+- No caching layer, so every request hits the database directly — fine at low-to-moderate
+  traffic, but a post going viral would need caching (e.g. per-view or template-fragment
+  caching) added before it became a problem.
+- No image/media pipeline yet — post bodies are Markdown text only; embedding images would need
+  `MEDIA_ROOT`/object storage decisions made first.

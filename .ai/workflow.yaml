@@ -4,9 +4,9 @@
 # this repository. There is no orchestrator-side default: if an agent isn't listed under
 # `agents:` below, that `@<profile>` command simply isn't available on this project's issues.
 #
-# This example targets a realistic npm-based JS/TS project (e.g. a Next.js or Node service).
-# Adjust `commands:` to whatever this repo actually uses, and prune/extend `allowed_tools:`
-# to match how much access you're comfortable giving each agent — narrower is safer.
+# This targets this repo's actual stack: a Django 5.2 blog, Python 3.12, dependencies managed
+# with uv, linted/formatted with Ruff, tested with pytest/pytest-django. See .ai/project.md and
+# .ai/coding-style.md for the full picture.
 #
 # Every `prompt:` path below is relative to this file's directory (.ai/) and must point at a
 # real file under .ai/prompts/ — see that directory for the five system prompts this example
@@ -48,12 +48,12 @@ agents:
     max_budget_usd: 2.0
 
   # The only profile that owns a task branch/worktree end to end (app/git_service.py). Full
-  # read/write on source plus scoped git/npm shell access; loops against install/build/lint/test
+  # read/write on source plus scoped git/uv shell access; loops against install/build/lint/test
   # (below) up to max_fix_iterations times before giving up.
   implementation:
     command: "@implementation"
     prompt: prompts/implementation.md
-    allowed_tools: ["Read", "Edit", "Write", "Grep", "Glob", "Bash(git:*)", "Bash(npm:*)"]
+    allowed_tools: ["Read", "Edit", "Write", "Grep", "Glob", "Bash(git:*)", "Bash(uv:*)"]
     permission_mode: dontAsk
     model: sonnet
     max_budget_usd: 6.0
@@ -75,7 +75,7 @@ agents:
   qa:
     command: "@qa"
     prompt: prompts/qa.md
-    allowed_tools: ["Read", "Bash(npm test:*)", "Bash(npm run:*)", "Grep", "Glob"]
+    allowed_tools: ["Read", "Bash(uv run:*)", "Grep", "Glob"]
     permission_mode: dontAsk
     model: haiku
     max_budget_usd: 2.0
@@ -84,7 +84,7 @@ agents:
 # actually gates on (app/agents/implementation.py runs them in this order, install -> build ->
 # lint -> test, stopping at the first failure) — not Claude's own opinion of whether it's done.
 commands:
-  install: "npm ci"
-  build: "npm run build"
-  lint: "npm run lint"
-  test: "npm test"
+  install: "uv sync"
+  build: "uv run python manage.py makemigrations --check --dry-run && uv run python manage.py check"
+  lint: "uv run ruff check . && uv run ruff format --check ."
+  test: "uv run pytest"
