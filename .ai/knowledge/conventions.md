@@ -65,3 +65,23 @@ which changes were AI-assisted after the fact.
      The first agent/human to notice a consistent, undocumented pattern in actual code (e.g. a
      recurring way tests are structured, a naming quirk for template partials) should add it
      here rather than leaving it to be rediscovered. -->
+
+## Database configuration defaults to SQLite locally, Postgres in deployment
+
+`config/settings.py` reads `DATABASE_URL` via `django-environ`'s `env.db()`, defaulting to a
+local `db.sqlite3` file when the variable is unset. This keeps `manage.py`/`pytest` runnable
+with zero setup (no Postgres needed for the orchestrator's `install`/`build`/`test` commands or
+for a contributor's first `git clone`), while `docker-compose.yml` sets a real
+`postgres://...` `DATABASE_URL` for the `web` service so deployed environments still use
+Postgres 17 as documented in `.ai/project.md`. If a change ever depends on Postgres-only
+behavior (e.g. a specific field type or full-text search), it needs a Postgres-backed test
+setup — don't assume the default sqlite fallback is what CI/tests exercise.
+
+## Static file storage is not manifest-based
+
+`STORAGES["staticfiles"]` uses plain `django.contrib.staticfiles.storage.StaticFilesStorage`
+rather than a hashed/manifest storage (e.g. WhiteNoise's `CompressedManifestStaticFilesStorage`).
+A manifest storage requires `collectstatic` to have run before `{% static %}` can resolve a URL,
+which would otherwise break template rendering in tests that never call `collectstatic`. Revisit
+if far-future cache headers on hashed filenames become worth adding a `collectstatic` step to
+the test/dev workflow.
