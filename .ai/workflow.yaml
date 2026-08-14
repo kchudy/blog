@@ -1,0 +1,90 @@
+# .ai/workflow.yaml — Workflow as Code (spec §10).
+#
+# This is the ONE file that tells the AI Orchestrator how to run each agent profile against
+# this repository. There is no orchestrator-side default: if an agent isn't listed under
+# `agents:` below, that `@<profile>` command simply isn't available on this project's issues.
+#
+# This example targets a realistic npm-based JS/TS project (e.g. a Next.js or Node service).
+# Adjust `commands:` to whatever this repo actually uses, and prune/extend `allowed_tools:`
+# to match how much access you're comfortable giving each agent — narrower is safer.
+#
+# Every `prompt:` path below is relative to this file's directory (.ai/) and must point at a
+# real file under .ai/prompts/ — see that directory for the five system prompts this example
+# references.
+
+version: 1
+
+# Purely descriptive/documentation — the orchestrator does not enforce Plane state transitions
+# itself, but listing the states here keeps this file a readable map of how work is expected to
+# move through the board alongside the agents that act at each stage.
+states:
+  - backlog
+  - requirements
+  - architecture
+  - implementation
+  - review
+  - qa
+  - done
+
+agents:
+  # Asks clarifying questions, refines the spec, and keeps .ai/project.md and
+  # .ai/architecture.md accurate. Docs-only access — never touches application source.
+  requirements:
+    command: "@requirements"
+    prompt: prompts/requirements.md
+    allowed_tools: ["Read", "Edit(.ai/**)", "Grep", "Glob"]
+    permission_mode: dontAsk
+    model: haiku
+    max_budget_usd: 1.0
+
+  # Proposes an implementation approach, writes a technical design, and records real decisions
+  # as ADRs under .ai/decisions/. Needs Write (not just Edit) to create new ADR files.
+  architecture:
+    command: "@architecture"
+    prompt: prompts/architecture.md
+    allowed_tools: ["Read", "Edit(.ai/**)", "Write(.ai/**)", "Grep", "Glob"]
+    permission_mode: dontAsk
+    model: opus
+    max_budget_usd: 2.0
+
+  # The only profile that owns a task branch/worktree end to end (app/git_service.py). Full
+  # read/write on source plus scoped git/npm shell access; loops against install/build/lint/test
+  # (below) up to max_fix_iterations times before giving up.
+  implementation:
+    command: "@implementation"
+    prompt: prompts/implementation.md
+    allowed_tools: ["Read", "Edit", "Write", "Grep", "Glob", "Bash(git:*)", "Bash(npm:*)"]
+    permission_mode: dontAsk
+    model: sonnet
+    max_budget_usd: 6.0
+    creates_branch: true
+    max_fix_iterations: 3
+
+  # Reviews the unified diff for the task branch. Deliberately read-only — no Edit/Write — so
+  # it can only comment and report, never "fix" something itself.
+  review:
+    command: "@review"
+    prompt: prompts/review.md
+    allowed_tools: ["Read", "Bash(git diff:*)", "Bash(git log:*)", "Grep", "Glob"]
+    permission_mode: dontAsk
+    model: opus
+    max_budget_usd: 2.0
+
+  # Runs the automated test suite and checks the result against the issue's acceptance
+  # criteria. Can execute tests but has no Edit/Write access to source.
+  qa:
+    command: "@qa"
+    prompt: prompts/qa.md
+    allowed_tools: ["Read", "Bash(npm test:*)", "Bash(npm run:*)", "Grep", "Glob"]
+    permission_mode: dontAsk
+    model: haiku
+    max_budget_usd: 2.0
+
+# Deterministic, non-LLM checks. These are what the implementation agent's fix-iteration loop
+# actually gates on (app/agents/implementation.py runs them in this order, install -> build ->
+# lint -> test, stopping at the first failure) — not Claude's own opinion of whether it's done.
+commands:
+  install: "npm ci"
+  build: "npm run build"
+  lint: "npm run lint"
+  test: "npm test"
