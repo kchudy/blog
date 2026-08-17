@@ -1,0 +1,22 @@
+/* Minimal, unobtrusive styling — this project deliberately has no CSS build pipeline. */
+
+body {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem;
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+header {
+  margin-bottom: 2rem;
+}
+
+.post-summary + .post-summary {
+  margin-top: 2rem;
+}
+
+.post-meta {
+  color: #666;
+  font-size: 0.9rem;
+}
