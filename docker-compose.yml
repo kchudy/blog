@@ -24,7 +24,7 @@ services:
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost}
       DATABASE_URL: postgres://blog:blog@db:5432/blog
     ports:
-      - "8000:8000"
+      - "8080:8000"
     command: >
       sh -c "uv run python manage.py migrate --noinput &&
              uv run gunicorn config.wsgi:application --bind 0.0.0.0:8000"

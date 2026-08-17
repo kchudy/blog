@@ -20,3 +20,11 @@ header {
   color: #666;
   font-size: 0.9rem;
 }
+
+.search-form {
+  margin: 1.5rem 0;
+}
+
+.post-excerpt {
+  margin-top: 0.5rem;
+}

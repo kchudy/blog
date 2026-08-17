@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Search{% if query %} results for &quot;{{ query }}&quot;{% endif %}{% endblock %}
+
+{% block content %}
+  <h1>Search</h1>
+
+  {% include "blog/_search_form.html" %}
+
+  {% if query %}
+    {% if posts %}
+      {% for post in posts %}
+        {% include "blog/_post_summary.html" with show_excerpt=True %}
+      {% endfor %}
+
+      {% if is_paginated %}
+        <nav>
+          {% if page_obj.has_previous %}
+            <a href="?q={{ query|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?q={{ query|urlencode }}&amp;page={{ page_obj.next_page_number }}">Next</a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    {% else %}
+      <p>
+        No articles found for &quot;{{ query }}&quot;.
+        <a href="{% url 'blog:post_list' %}">Browse all articles</a>.
+      </p>
+    {% endif %}
+  {% else %}
+    <p>Enter a search term above to find articles.</p>
+  {% endif %}
+{% endblock %}
