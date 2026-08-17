@@ -24,6 +24,16 @@ class PostQuerySet(models.QuerySet):
         """Posts visible to the public: `status=published` and `published_at` in the past."""
         return self.filter(status=Post.Status.PUBLISHED, published_at__lte=timezone.now())
 
+    def search(self, query):
+        """Case-insensitive match of `query` against title or body.
+
+        Uses `icontains` rather than Postgres full-text search (`SearchVector`/`SearchQuery`) —
+        at this project's scale a substring match is enough, and it works identically on the
+        sqlite backend the test suite/CI run against (see `.ai/knowledge/conventions.md`'s note
+        on the sqlite/Postgres split) without needing a Postgres-backed test setup.
+        """
+        return self.filter(models.Q(title__icontains=query) | models.Q(body__icontains=query))
+
 
 class Post(models.Model):
     """A single article — see `.ai/project.md`'s glossary for the full definition."""

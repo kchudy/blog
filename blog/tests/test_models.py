@@ -16,6 +16,24 @@ class TestPostQuerySetPublished:
         assert future_post not in Post.objects.published()
 
 
+class TestPostQuerySetSearch:
+    def test_matches_title_case_insensitively(self, published_post):
+        assert list(Post.objects.search("published")) == [published_post]
+        assert list(Post.objects.search("PUBLISHED")) == [published_post]
+
+    def test_matches_body_text(self, published_post):
+        assert list(Post.objects.search("Hello")) == [published_post]
+
+    def test_no_match_returns_empty(self, published_post):
+        assert list(Post.objects.search("nonexistent-term")) == []
+
+    def test_can_be_combined_with_published(self, published_post, draft_post):
+        draft_post.title = "Draft Post about Django"
+        draft_post.save()
+        results = Post.objects.published().search("Django")
+        assert draft_post not in results
+
+
 class TestPostIsPublished:
     def test_true_for_published_post_in_the_past(self, published_post):
         assert published_post.is_published() is True
