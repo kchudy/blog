@@ -1,0 +1,46 @@
+{
+  "name": "blog",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Self-hosted, static, Vite + Svelte-based publishing platform for long-form articles.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kchudy/blog.git"
+  },
+  "homepage": "https://github.com/kchudy/blog#readme",
+  "bugs": {
+    "url": "https://github.com/kchudy/blog/issues"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "pretest": "node scripts/build-content.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "svelte": "^5.56.10"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@sveltejs/vite-plugin-svelte": "^5.1.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/svelte": "^5.4.2",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-svelte": "^3.23.0",
+    "globals": "^17.11.0",
+    "gray-matter": "^4.0.3",
+    "jsdom": "^27.0.1",
+    "marked": "^18.0.10",
+    "prettier": "^3.9.6",
+    "prettier-plugin-svelte": "^4.1.1",
+    "sanitize-html": "^2.17.7",
+    "vite": "^6.4.3",
+    "vitest": "^3.2.7"
+  }
+}

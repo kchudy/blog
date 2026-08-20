@@ -3,7 +3,7 @@
 This is a running log of known bugs, limitations, and rough edges in this project — the things
 an engineer (human or AI agent) would otherwise have to rediscover the hard way. It is not a
 bug tracker; use Plane for anything that should be actively worked. This file is for issues
-that are known, understood, and currently *accepted* (not yet fixed, low priority, or a
+that are known, understood, and currently _accepted_ (not yet fixed, low priority, or a
 tradeoff the team has knowingly made) — so nobody wastes time "discovering" them again, and so
 `@implementation`/`@review`/`@qa` agents don't mistake a known limitation for a regression they
 introduced.

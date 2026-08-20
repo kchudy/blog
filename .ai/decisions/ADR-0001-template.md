@@ -20,6 +20,7 @@
 [Proposed | Accepted | Superseded by ADR-000N | Deprecated]
 
 <!-- Date this status was set. -->
+
 **Date:** [YYYY-MM-DD]
 
 ## Context
@@ -27,7 +28,7 @@
 [What is the problem or situation that requires a decision? What forces are at play —
 technical constraints, product requirements, team constraints, prior decisions this
 interacts with? Write this as if the reader has none of the conversation that led here —
-they should be able to understand *why this decision needed to be made at all* from this
+they should be able to understand _why this decision needed to be made at all_ from this
 section alone.]
 
 ## Decision

@@ -1,6 +1,5 @@
-node_modules/
 dist/
+node_modules/
 src/generated/
 public/feed.xml
-.vite/
-*.local
+package-lock.json

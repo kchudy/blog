@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-0004](ADR-0004-rewrite-as-static-vite-svelte-site.md) — there is no longer a
+`web` service or a cluster to deploy it to; kept as historical record (including of the
+GitHub-runner-to-cluster networking trouble that partly motivated moving away from this).
 
 **Date:** 2026-08-20
 

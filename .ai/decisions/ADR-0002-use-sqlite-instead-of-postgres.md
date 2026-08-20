@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-0004](ADR-0004-rewrite-as-static-vite-svelte-site.md) — the Django/SQLite
+application described below no longer exists; kept as historical record.
 
 **Date:** 2026-08-20
 

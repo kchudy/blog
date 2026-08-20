@@ -66,22 +66,21 @@ which changes were AI-assisted after the fact.
      recurring way tests are structured, a naming quirk for template partials) should add it
      here rather than leaving it to be rediscovered. -->
 
-## Database configuration is SQLite everywhere, local and deployed
+## The GitHub Pages base path lives in exactly one file
 
-`config/settings.py` reads `DATABASE_URL` via `django-environ`'s `env.db()`, defaulting to a
-local `db.sqlite3` file when the variable is unset. This keeps `manage.py`/`pytest` runnable
-with zero setup, while `docker-compose.yml` sets `DATABASE_URL` to a `sqlite:////data/...` path
-on a mounted volume so the deployed `web` container's data survives container recreation (see
-`.ai/decisions/ADR-0002-use-sqlite-instead-of-postgres.md`). Since local, test, and deployed
-environments all use the same backend, there's no sqlite/Postgres behavioral split to worry
-about — don't reintroduce Postgres-only field types or queries without also standing up a
-Postgres-backed test setup.
+`site.config.js`'s `BASE_PATH`/`SITE_URL` are imported by both `vite.config.js` (so built asset
+URLs resolve under `/blog/`) and `scripts/build-content.js` (so RSS `<link>`/`<guid>` URLs are
+correct absolute links). Update the path in `site.config.js` only — duplicating it into either
+consumer directly is exactly the kind of drift that quietly breaks either asset loading or the
+feed depending on which copy goes stale. See
+`.ai/decisions/ADR-0004-rewrite-as-static-vite-svelte-site.md`.
 
-## Static file storage is not manifest-based
+## Content and app code are tested with different strategies, deliberately
 
-`STORAGES["staticfiles"]` uses plain `django.contrib.staticfiles.storage.StaticFilesStorage`
-rather than a hashed/manifest storage (e.g. WhiteNoise's `CompressedManifestStaticFilesStorage`).
-A manifest storage requires `collectstatic` to have run before `{% static %}` can resolve a URL,
-which would otherwise break template rendering in tests that never call `collectstatic`. Revisit
-if far-future cache headers on hashed filenames become worth adding a `collectstatic` step to
-the test/dev workflow.
+`scripts/build-content.test.js` writes real temporary `.md` files to disk and calls
+`buildContent()` with directory overrides, because that script's entire job is reading files —
+faking that away would test nothing real. Component tests
+(`PostListPage.test.js`/`PostDetailPage.test.js`) do the opposite: they mock `../posts.js` (and
+`../storage.svelte.js` where relevant) with small inline fixture objects rather than depending on
+`src/generated/posts.json` existing on disk. Don't "fix" one to look like the other — match the
+strategy to what's actually being tested, per `.ai/coding-style.md`'s testing section.

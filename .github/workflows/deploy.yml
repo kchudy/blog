@@ -1,98 +1,64 @@
 name: Deploy
 
-# Runs after CI (lint + test, see ci.yml) succeeds on main — this never builds/deploys a commit
-# that hasn't passed CI first.
+# Triggers directly on push to main and runs its own lint/test/build gate, rather than chaining
+# off CI's completion via workflow_run — simpler and avoids a whole class of trigger-registration
+# timing issues (see .ai/knowledge/troubleshooting.md and the git history of this workflow's
+# Kubernetes-era predecessor for why that's a real, previously-hit failure mode here).
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+  push:
     branches: [main]
 
-concurrency:
-  group: deploy-production
-  cancel-in-progress: false
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
-env:
-  IMAGE: ghcr.io/${{ github.repository }}
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  build-and-push:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          node-version: 20
+          cache: npm
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          context: .
-          push: true
-          tags: |
-            ${{ env.IMAGE }}:${{ github.event.workflow_run.head_sha }}
-            ${{ env.IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          path: dist
 
   deploy:
-    needs: build-and-push
+    needs: build
     runs-on: ubuntu-latest
-    environment: production
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-
-      - name: Configure kubeconfig
-        # KUBE_CONFIG holds the kubeconfig YAML as-is (not base64) — piped through an env var
-        # rather than interpolated directly into the script, so odd characters in it can't be
-        # misparsed as shell syntax.
-        env:
-          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
-        run: |
-          mkdir -p "$HOME/.kube"
-          printf '%s' "$KUBE_CONFIG" > "$HOME/.kube/config"
-          chmod 600 "$HOME/.kube/config"
-
-      # Only relevant if the ghcr.io package is private (GHCR_PAT needs `read:packages`) — a
-      # public package needs neither this step nor the `imagePullSecrets` field in
-      # k8s/deployment.yaml. Refreshed on every deploy since it's created from a repo secret
-      # rather than the (short-lived) GITHUB_TOKEN, so pulls keep working between deploys too.
-      - name: Sync GHCR pull secret
-        # `secrets` isn't a valid context in a step `if:` (only in `env:`), so the emptiness
-        # check goes through an intermediate env var instead.
-        if: ${{ env.GHCR_PAT != '' }}
-        env:
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
-        run: |
-          kubectl create secret docker-registry ghcr-pull-secret \
-            --docker-server=ghcr.io \
-            --docker-username=${{ github.actor }} \
-            --docker-password="$GHCR_PAT" \
-            --namespace=blog \
-            --dry-run=client -o yaml | kubectl apply -f -
-
-      - name: Pin image tag
-        working-directory: k8s
-        run: |
-          sed -i "s|newTag: .*|newTag: ${{ github.event.workflow_run.head_sha }}|" kustomization.yaml
-
-      - name: Apply manifests
-        run: kubectl apply -k k8s/
-
-      - name: Wait for rollout
-        run: kubectl rollout status deployment/web -n blog --timeout=180s
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

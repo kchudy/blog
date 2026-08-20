@@ -10,75 +10,77 @@
 
 ## Overview
 
-Blog is a single Django monolith: one `web` process serves both the public site and the Django
-admin (used by authors to write and publish posts), backed by an embedded SQLite database file
-held on a persistent volume. There is no separate database process, worker, queue, or cache —
-every request is handled synchronously by Django against the local file
-(see `.ai/decisions/ADR-0002-use-sqlite-instead-of-postgres.md`). It runs as a single-replica
-Kubernetes Deployment (see `.ai/decisions/ADR-0003-deploy-with-kubernetes.md`);
-`docker-compose.yml` covers local development only.
+Blog is a static site: a Svelte 5 app, built by Vite, deployed to GitHub Pages. There is no
+server, database, or container of any kind — "the backend" is a build step
+(`scripts/build-content.js`) that turns Markdown files in this repo into JSON/RSS the client-side
+app reads. See `.ai/decisions/ADR-0004-rewrite-as-static-vite-svelte-site.md` for the full
+reasoning and what this replaced (a Django + SQLite app on Kubernetes).
 
 ## Components
 
-| Component | Responsibility | Tech | Repo path |
-| --- | --- | --- | --- |
-| `web` | Serves public post list/detail pages, the RSS feed, the Django admin (post authoring), and holds the SQLite database file on a mounted PersistentVolume | Django 5.2 + gunicorn, static files via WhiteNoise, SQLite via the Django ORM | `config/`, `blog/`, `k8s/` |
-
-A reverse proxy / TLS termination (nginx, Caddy, or whatever the hosting platform provides) sits
-in front of `web` in production but is not part of this repo — `web` itself serves plain HTTP;
-`k8s/service.yaml` is ClusterIP-only until an Ingress is added.
+| Component         | Responsibility                                                                                     | Tech                                                                          | Repo path                                    |
+| ----------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------- |
+| `content/posts/`  | Source of truth for post content — one Markdown file per post, with frontmatter                    | Markdown + YAML frontmatter                                                   | `content/posts/`                             |
+| Content build     | Decides what's published, renders Markdown → sanitized HTML, writes the data the app and feed need | Node script (`gray-matter`, `marked`, `sanitize-html`), run via a Vite plugin | `scripts/build-content.js`, `vite.config.js` |
+| App               | Renders the post list/search/tag views and a post detail view; hash-based client-side routing      | Svelte 5 (runes) + Vite                                                       | `src/`                                       |
+| Per-browser state | Theme preference and which posts this browser has read — never post content                        | `localStorage`                                                                | `src/lib/storage.svelte.js`                  |
+| Static hosting    | Serves the built `dist/` output                                                                    | GitHub Pages                                                                  | `.github/workflows/deploy.yml`               |
 
 ## Data flow
 
 Three representative flows:
 
-- **Reading a post:** a browser `GET /posts/<slug>/` hits Django's URLconf, which routes to
-  `blog.views.PostDetailView`. The view fetches the matching `Post` (404s if it doesn't exist or
-  isn't `published`), renders its Markdown `body` to sanitized HTML, and renders
-  `post_detail.html`.
-- **Publishing a post:** an author logs into `/admin/`, creates or edits a `Post` through
-  Django's built-in admin, and sets `status=published`. There is no custom authoring UI — the
-  admin *is* the CMS.
-- **Subscribing:** a `GET /feed/` hits `blog.feeds.LatestPostsFeed` (Django's syndication
-  framework), which queries the latest `published` posts and serves them as RSS — no custom
-  feed-rendering code needed.
+- **Reading a post:** a browser navigates to `#/posts/<slug>`; `src/lib/router.svelte.js` parses
+  the hash and `App.svelte` renders `PostDetailPage`, which looks the slug up in the build-time-
+  generated `src/generated/posts.json` (already filtered to published posts — an unknown or
+  unpublished slug renders the same "not found" view) and renders its pre-sanitized HTML body.
+- **Publishing a post:** someone adds or edits a Markdown file under `content/posts/` with
+  `status: published` and opens a pull request. Once merged to `main`, `deploy.yml` rebuilds the
+  site (`scripts/build-content.js` re-decides what's published) and redeploys to GitHub Pages —
+  there is no admin UI or login; repo write/review access is the authoring permission.
+- **Subscribing:** `scripts/build-content.js` writes `public/feed.xml` from the latest published
+  posts at build time; GitHub Pages serves it as a static file at `/feed.xml` — no per-request
+  feed generation, because there's no server to do it on.
 
 ```
-Browser ──GET /posts/<slug>/──> Django URLconf ──> PostDetailView ──> SQLite (Post, Tag)
-                                                          │
-                                                          v
-                                                   post_detail.html
+content/posts/*.md ──build-content.js──> src/generated/posts.json ──> Svelte app ──> browser
+                                     └───> public/feed.xml ──> served as a static file
 
-Author ──login /admin/──> Django admin ──> SQLite (Post, Tag, User)
-
-Reader ──GET /feed/──> LatestPostsFeed ──> SQLite ──> RSS XML
+Browser #/posts/<slug> ──router.svelte.js──> PostDetailPage ──findBySlug──> posts.json
+Browser #/?q=... ───────router.svelte.js──> PostListPage ────search─────> posts.json
 ```
 
 ## Key design decisions
 
-- **Use SQLite instead of PostgreSQL** — see
-  `.ai/decisions/ADR-0002-use-sqlite-instead-of-postgres.md`. Drops the separate `db` container
-  in favor of a single `web` container with its database file on a mounted volume.
-- **Deploy to Kubernetes** — see `.ai/decisions/ADR-0003-deploy-with-kubernetes.md`. A
-  single-replica `web` Deployment (`k8s/`), built and rolled out by
-  `.github/workflows/deploy.yml` on every `main` push that passes CI.
+- **Rewrite as a static Vite + Svelte site, deployed to GitHub Pages** — see
+  `.ai/decisions/ADR-0004-rewrite-as-static-vite-svelte-site.md`. Supersedes ADR-0002 (SQLite)
+  and ADR-0003 (Kubernetes), both now historical record only.
 
 ## External dependencies
 
-None yet. This is a self-contained Django + SQLite application with no third-party runtime
-services. If a future feature needs one (e.g. an SMTP relay for author notifications, or object
-storage for images), add a row here describing what happens if it's unavailable.
+None. This is a fully static site with no third-party runtime services — GitHub Pages serves the
+built output directly. If a future feature needs one (e.g. a comments widget, analytics), add a
+row here describing what happens if it's unavailable, and weigh it against
+`.ai/project.md`'s "no comments system" / "smallest system that can do the job well" stance.
 
 ## Known limitations
 
-- SQLite serializes writes (one writer at a time) and the database file lives on a single
-  PersistentVolume with no built-in replication — acceptable at current scale (one `web`
-  process, low-to-moderate write volume); would need to move back to a networked database before
-  this could run multiple `web` replicas or tolerate the volume's underlying disk failing. This
-  is also why the Kubernetes Deployment is pinned to 1 replica with `strategy: Recreate` rather
-  than a RollingUpdate (see `.ai/decisions/ADR-0003-deploy-with-kubernetes.md`).
-- No caching layer, so every request hits the database directly — fine at low-to-moderate
-  traffic, but a post going viral would need caching (e.g. per-view or template-fragment
-  caching) added before it became a problem.
-- No image/media pipeline yet — post bodies are Markdown text only; embedding images would need
-  `MEDIA_ROOT`/object storage decisions made first.
+- **Publishing isn't instant.** A merged post goes live only after the next `deploy.yml` run
+  finishes (typically a couple of minutes) — there's no live admin preview. A `published_at` in
+  the future also only takes effect the next time the site happens to be rebuilt for some other
+  reason; there's no scheduled rebuild yet. Add one (a scheduled GitHub Actions workflow) if
+  "publish exactly on time" becomes a real requirement.
+- **Search ships every published post's text to the client.** Fine at this project's scale
+  (client-side substring match, see `src/lib/posts.js`); would need a real search index or
+  pagination of the underlying data if the post count grew large enough to make the JS bundle
+  unreasonably big.
+- **No authoring UI.** Writing a post means editing a Markdown file and opening a PR — there is no
+  in-browser editor, draft preview, or login. Fine for a small team comfortable with git; would
+  need revisiting (see ADR-0004's "Alternatives considered") if a non-technical author needed to
+  publish without help.
+- **`localStorage` state is per-browser by design**, not a bug: clearing site data or switching
+  devices loses theme preference and read-post tracking. Nothing more important than that is
+  meant to live there — see ADR-0004's "Context" for why post content specifically cannot.
+- No image/media pipeline — post bodies are Markdown text (with `<img>` allowed if it points at an
+  externally-hosted image); embedding uploaded images would need an asset pipeline decision made
+  first.

@@ -1,0 +1,170 @@
+/* Minimal, unobtrusive styling — carried over from the old Django template's static/css/main.css,
+   extended with theme tokens for the light/dark toggle (see src/lib/storage.svelte.js). */
+
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #666666;
+  --border: #e2e2e2;
+  --link: #1a56db;
+  --link-visited: #6b21a8;
+  --code-bg: #f2f2f2;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #16181d;
+  --fg: #e8e8e8;
+  --muted: #9a9a9a;
+  --border: #33363c;
+  --link: #7aa7ff;
+  --link-visited: #c39bf0;
+  --code-bg: #24262b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem;
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+a {
+  color: var(--link);
+}
+
+a:visited {
+  color: var(--link-visited);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+header .brand {
+  font-weight: 700;
+  font-size: 1.25rem;
+  text-decoration: none;
+  color: var(--fg);
+}
+
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+}
+
+.post-summary + .post-summary {
+  margin-top: 2rem;
+}
+
+.post-summary h2 {
+  margin-bottom: 0.25rem;
+}
+
+.post-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.read-badge {
+  color: #2e9e5b;
+  font-size: 0.85em;
+}
+
+.search-form {
+  margin: 1.5rem 0;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-form input {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.search-form button,
+.pagination button {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  border-radius: 0.25rem;
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.post-excerpt {
+  margin-top: 0.5rem;
+}
+
+.pagination {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+pre,
+code {
+  background: var(--code-bg);
+  border-radius: 0.25rem;
+}
+
+pre {
+  padding: 0.75rem;
+  overflow-x: auto;
+}
+
+code {
+  padding: 0.1rem 0.3rem;
+}
+
+pre code {
+  padding: 0;
+  background: none;
+}
+
+blockquote {
+  border-left: 3px solid var(--border);
+  margin-left: 0;
+  padding-left: 1rem;
+  color: var(--muted);
+}
+
+img {
+  max-width: 100%;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}

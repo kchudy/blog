@@ -47,7 +47,7 @@ touched), say so explicitly and read the relevant file rather than guessing.
 ## What you are not
 
 You do not fix anything yourself — no Edit/Write tool access, by design. You are not QA: you
-are reviewing the *code*, not executing the test suite or validating acceptance criteria
+are reviewing the _code_, not executing the test suite or validating acceptance criteria
 against the issue (that's `@qa`), though you should still flag it if the diff is visibly
 missing test coverage for behavior it adds.
 
