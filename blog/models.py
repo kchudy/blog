@@ -27,10 +27,9 @@ class PostQuerySet(models.QuerySet):
     def search(self, query):
         """Case-insensitive match of `query` against title or body.
 
-        Uses `icontains` rather than Postgres full-text search (`SearchVector`/`SearchQuery`) —
-        at this project's scale a substring match is enough, and it works identically on the
-        sqlite backend the test suite/CI run against (see `.ai/knowledge/conventions.md`'s note
-        on the sqlite/Postgres split) without needing a Postgres-backed test setup.
+        Uses `icontains` rather than a dedicated full-text search feature — at this project's
+        scale a substring match is enough, and SQLite (the only backend this project runs, see
+        `.ai/knowledge/conventions.md`) has no built-in equivalent worth reaching for anyway.
         """
         return self.filter(models.Q(title__icontains=query) | models.Q(body__icontains=query))
 

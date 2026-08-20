@@ -1,28 +1,13 @@
 services:
-  db:
-    image: postgres:17
-    environment:
-      POSTGRES_DB: blog
-      POSTGRES_USER: blog
-      POSTGRES_PASSWORD: blog
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U blog"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   web:
     build: .
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set DJANGO_SECRET_KEY in the environment}
       DEBUG: "False"
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost}
-      DATABASE_URL: postgres://blog:blog@db:5432/blog
+      DATABASE_URL: sqlite:////data/db.sqlite3
+    volumes:
+      - sqlite_data:/data
     ports:
       - "8080:8000"
     command: >
@@ -30,4 +15,4 @@ services:
              uv run gunicorn config.wsgi:application --bind 0.0.0.0:8000"
 
 volumes:
-  postgres_data:
+  sqlite_data:

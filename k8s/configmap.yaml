@@ -1,0 +1,16 @@
+# Non-secret runtime configuration for the `web` Deployment. Mirrors the environment block in
+# docker-compose.yml (used for local development) — keep the two in sync when settings change.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blog-config
+  namespace: blog
+  labels:
+    app: blog
+    component: web
+data:
+  DEBUG: "False"
+  DJANGO_ALLOWED_HOSTS: blog.example.com
+  # SQLite file lives on the sqlite-data PersistentVolumeClaim, mounted at /data (see pvc.yaml
+  # and deployment.yaml) — see .ai/decisions/ADR-0002-use-sqlite-instead-of-postgres.md.
+  DATABASE_URL: sqlite:////data/db.sqlite3

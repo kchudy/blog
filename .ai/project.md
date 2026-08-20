@@ -28,24 +28,28 @@ posts without needing JavaScript.
 
 - **Language(s):** Python 3.12
 - **Framework(s):** Django 5.2 (LTS)
-- **Datastore(s):** PostgreSQL 17 via the Django ORM — no cache or queue at this scale
+- **Datastore(s):** SQLite via the Django ORM, its file held on a Docker volume — no cache or
+  queue at this scale (see `.ai/decisions/ADR-0002-use-sqlite-instead-of-postgres.md`)
 - **Package manager:** uv (`pyproject.toml` + `uv.lock`)
-- **Infra / deployment target:** Docker Compose (`web` + `db` services) on a single VPS; gunicorn
-  serves Django, WhiteNoise serves static files directly — no separate app server, CDN, or
-  orchestration platform
-- **CI:** GitHub Actions — `.github/workflows/ci.yml` (lint + test on every push/PR)
+- **Infra / deployment target:** Kubernetes — a single-replica `web` Deployment (see
+  `.ai/decisions/ADR-0003-deploy-with-kubernetes.md`), manifests under `k8s/`; gunicorn serves
+  Django, WhiteNoise serves static files directly — no separate app server, database container,
+  or CDN. `docker-compose.yml` remains for local development only.
+- **CI/CD:** GitHub Actions — `.github/workflows/ci.yml` (lint + test on every push/PR) and
+  `.github/workflows/deploy.yml` (build image, push to GHCR, deploy to Kubernetes on `main`)
 
 ## Key constraints
 
 - No caching layer, task queue, or background worker (no Redis/Celery) — deliberate, for a
   low-to-moderate-traffic blog. Revisit only if a real feature needs async work (e.g. sending
-  email) or read traffic outgrows a single Postgres instance.
+  email) or read traffic outgrows what a single SQLite file can serve.
 - Server-rendered Django templates only — no SPA/JS framework. Light, unobtrusive JS (or htmx,
   if a future feature genuinely needs it) is fine; a client-side build pipeline is not.
 - No comments system — deliberately out of scope to avoid spam/moderation overhead. External
   discussion (social media, etc.) is an acceptable substitute.
-- Must run comfortably on a single small VPS: one `web` container and one `db` container, no
-  Kubernetes/Nomad/multi-region setup.
+- Runs as a single `web` container/pod with an embedded SQLite database, no separate database
+  container — deliberately minimal even on Kubernetes (see
+  `.ai/decisions/ADR-0003-deploy-with-kubernetes.md`); no multi-region setup.
 - Authors are trusted, internal users created via Django admin — no public sign-up or untrusted
   content submission.
 
@@ -58,7 +62,8 @@ posts without needing JavaScript.
 | `blog/` | The main (and, for now, only) app: `Post`/`Tag` models, views, forms, feeds, templates, and its own `tests/` |
 | `templates/` | Shared/base templates (`base.html`, layout partials) that `blog/` templates extend |
 | `static/` | Project-wide static assets (CSS, images), collected via `collectstatic` |
-| `.github/workflows/` | CI pipeline definition |
+| `.github/workflows/` | CI and CI/CD (build/push/deploy) pipeline definitions |
+| `k8s/` | Kubernetes manifests (Kustomize) for the deployed `web` service |
 
 ## Links
 

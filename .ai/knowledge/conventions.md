@@ -66,16 +66,16 @@ which changes were AI-assisted after the fact.
      recurring way tests are structured, a naming quirk for template partials) should add it
      here rather than leaving it to be rediscovered. -->
 
-## Database configuration defaults to SQLite locally, Postgres in deployment
+## Database configuration is SQLite everywhere, local and deployed
 
 `config/settings.py` reads `DATABASE_URL` via `django-environ`'s `env.db()`, defaulting to a
 local `db.sqlite3` file when the variable is unset. This keeps `manage.py`/`pytest` runnable
-with zero setup (no Postgres needed for the orchestrator's `install`/`build`/`test` commands or
-for a contributor's first `git clone`), while `docker-compose.yml` sets a real
-`postgres://...` `DATABASE_URL` for the `web` service so deployed environments still use
-Postgres 17 as documented in `.ai/project.md`. If a change ever depends on Postgres-only
-behavior (e.g. a specific field type or full-text search), it needs a Postgres-backed test
-setup — don't assume the default sqlite fallback is what CI/tests exercise.
+with zero setup, while `docker-compose.yml` sets `DATABASE_URL` to a `sqlite:////data/...` path
+on a mounted volume so the deployed `web` container's data survives container recreation (see
+`.ai/decisions/ADR-0002-use-sqlite-instead-of-postgres.md`). Since local, test, and deployed
+environments all use the same backend, there's no sqlite/Postgres behavioral split to worry
+about — don't reintroduce Postgres-only field types or queries without also standing up a
+Postgres-backed test setup.
 
 ## Static file storage is not manifest-based
 

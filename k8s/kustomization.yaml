@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+
+# `deploy.yml` overwrites this tag on every deploy (sed-replaces `newTag:` with the built commit
+# SHA before `kubectl apply -k`) — `latest` here is only a fallback for applying these manifests
+# by hand.
+images:
+  - name: ghcr.io/kchudy/blog
+    newTag: latest
