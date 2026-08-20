@@ -58,9 +58,14 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Configure kubeconfig
+        # KUBE_CONFIG holds the kubeconfig YAML as-is (not base64) — piped through an env var
+        # rather than interpolated directly into the script, so odd characters in it can't be
+        # misparsed as shell syntax.
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         run: |
           mkdir -p "$HOME/.kube"
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > "$HOME/.kube/config"
+          printf '%s' "$KUBE_CONFIG" > "$HOME/.kube/config"
           chmod 600 "$HOME/.kube/config"
 
       # Only relevant if the ghcr.io package is private (GHCR_PAT needs `read:packages`) — a

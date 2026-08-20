@@ -56,7 +56,7 @@ datastore (bringing back a networked database), not raising `replicas` on this D
 
 | Secret | Required | Purpose |
 | --- | --- | --- |
-| `KUBE_CONFIG` | Yes | Base64-encoded kubeconfig (`cat ~/.kube/config \| base64 -w0`) with access to the `blog` namespace. Used by the `deploy` job in `.github/workflows/deploy.yml`. |
+| `KUBE_CONFIG` | Yes | Kubeconfig YAML as-is — `gh secret set KUBE_CONFIG < ~/.kube/config` (no base64 encoding) — with access to the `blog` namespace. Used by the `deploy` job in `.github/workflows/deploy.yml`. |
 | `GHCR_PAT` | Only if the GHCR package is private | PAT with `read:packages`, used to refresh the cluster's `ghcr-pull-secret` each deploy. |
 
 `GITHUB_TOKEN` (build/push to GHCR) is provided automatically by Actions — no setup needed.
