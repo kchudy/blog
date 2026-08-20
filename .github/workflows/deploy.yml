@@ -68,12 +68,16 @@ jobs:
       # k8s/deployment.yaml. Refreshed on every deploy since it's created from a repo secret
       # rather than the (short-lived) GITHUB_TOKEN, so pulls keep working between deploys too.
       - name: Sync GHCR pull secret
-        if: ${{ secrets.GHCR_PAT != '' }}
+        # `secrets` isn't a valid context in a step `if:` (only in `env:`), so the emptiness
+        # check goes through an intermediate env var instead.
+        if: ${{ env.GHCR_PAT != '' }}
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
         run: |
           kubectl create secret docker-registry ghcr-pull-secret \
             --docker-server=ghcr.io \
             --docker-username=${{ github.actor }} \
-            --docker-password=${{ secrets.GHCR_PAT }} \
+            --docker-password="$GHCR_PAT" \
             --namespace=blog \
             --dry-run=client -o yaml | kubectl apply -f -
 
