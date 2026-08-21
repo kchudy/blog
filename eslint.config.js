@@ -8,7 +8,17 @@ export default [
     // Flat config's `ignores`-only object is the one place a glob applies globally rather than
     // just to the files matched by that same config object's own `files` — everything else in
     // this array only scopes rules, so stray non-project directories need to be excluded here.
-    ignores: ["dist/", "node_modules/", "src/generated/", ".venv/", "public/"],
+    ignores: [
+      "dist/",
+      "node_modules/",
+      "src/generated/",
+      ".venv/",
+      "public/",
+      // Vendored design-handoff reference assets (gitignored — see .ai/attachments/.gitignore),
+      // not app source: a React component bundle and a minified prototype runtime, neither
+      // written to this project's lint/style conventions.
+      ".ai/attachments/",
+    ],
   },
   js.configs.recommended,
   ...svelte.configs["flat/recommended"],

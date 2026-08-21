@@ -1,24 +1,65 @@
 <script>
-  import { navigate } from "../router.svelte.js";
-
-  let { value = "" } = $props();
-  // A writable $derived: reassigning `query` (via bind:value below) locally overrides it while
-  // typing, and it recomputes from `value` whenever that changes for a reason other than typing
-  // — browser back/forward, or clearing search by navigating to "/".
-  let query = $derived(value);
-
-  function onSubmit(event) {
-    event.preventDefault();
-    navigate("/", { q: query });
-  }
+  // Live filter — no submit button. The parent owns `value` and re-derives the filtered list on
+  // every keystroke (see PostListPage.svelte); this component is just the input's presentation.
+  let { value = $bindable("") } = $props();
 </script>
 
-<form class="search-form" onsubmit={onSubmit}>
+<label class="search-box">
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.75"
+    stroke-linecap="round"
+    aria-hidden="true"
+  >
+    <circle cx="11" cy="11" r="7" />
+    <path d="M21 21l-4.3-4.3" />
+  </svg>
   <input
-    type="search"
-    placeholder="Search articles..."
-    aria-label="Search"
-    bind:value={query}
+    type="text"
+    bind:value
+    placeholder="Filter posts, tags, authors…"
+    aria-label="Filter posts, tags, authors"
   />
-  <button type="submit">Search</button>
-</form>
+</label>
+
+<style>
+  .search-box {
+    flex: 1;
+    min-width: 260px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    height: 36px;
+    padding: 0 11px;
+    box-sizing: border-box;
+    background: var(--paper);
+    border: 1px solid var(--hair2);
+    border-radius: var(--r5);
+    color: var(--faint);
+  }
+
+  .search-box:focus-within {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-tint);
+  }
+
+  .search-box input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 13.5px;
+  }
+
+  .search-box input::placeholder {
+    color: var(--faint);
+  }
+</style>

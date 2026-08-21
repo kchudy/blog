@@ -58,10 +58,13 @@ Browser #/?q=... ───────router.svelte.js──> PostListPage ─�
 
 ## External dependencies
 
-None. This is a fully static site with no third-party runtime services — GitHub Pages serves the
-built output directly. If a future feature needs one (e.g. a comments widget, analytics), add a
-row here describing what happens if it's unavailable, and weigh it against
-`.ai/project.md`'s "no comments system" / "smallest system that can do the job well" stance.
+- **Google Fonts** (`fonts.googleapis.com`) — the post index's Defguard-based design (BLOG-2)
+  loads Inter + JetBrains Mono via a CSS `@import` in `src/app.css`. If unreachable, the
+  `font-family` stack falls back to `system-ui`/`ui-monospace` — layout and function are
+  unaffected, only the typeface changes. No other third-party runtime services: GitHub Pages
+  serves the built output directly. If a future feature needs one (e.g. a comments widget,
+  analytics), add a row here describing what happens if it's unavailable, and weigh it against
+  `.ai/project.md`'s "no comments system" / "smallest system that can do the job well" stance.
 
 ## Known limitations
 
