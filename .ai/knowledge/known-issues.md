@@ -3,7 +3,7 @@
 This is a running log of known bugs, limitations, and rough edges in this project — the things
 an engineer (human or AI agent) would otherwise have to rediscover the hard way. It is not a
 bug tracker; use Plane for anything that should be actively worked. This file is for issues
-that are known, understood, and currently *accepted* (not yet fixed, low priority, or a
+that are known, understood, and currently _accepted_ (not yet fixed, low priority, or a
 tradeoff the team has knowingly made) — so nobody wastes time "discovering" them again, and so
 `@implementation`/`@review`/`@qa` agents don't mistake a known limitation for a regression they
 introduced.
@@ -41,23 +41,49 @@ commit/PR so it's traceable).
   than double-clicking to open in Excel.
 - **Tracked:** not yet filed
 
+### `PostSummary.svelte` is dead code left over from the BLOG-2 redesign
+
+- **Where:** `src/lib/components/PostSummary.svelte`.
+- **Symptom:** The file still exists and still compiles, but nothing imports it —
+  `PostListPage.svelte` now renders `PostRow.svelte` instead (per the Defguard design handoff's
+  post index redesign).
+- **Cause:** The implementation agent that did the redesign had no file-delete-capable tool
+  available in its environment for that run, so it could add `PostRow.svelte` but couldn't
+  remove the file it replaced.
+- **Impact:** None functionally (lint/format/test/build all pass with it present) — just cruft.
+- **Workaround:** `git rm src/lib/components/PostSummary.svelte` whenever someone with normal
+  shell access next touches this area.
+- **Tracked:** not yet filed
+
+### Post index empty-state copy hardcodes "Two posts so far"
+
+- **Where:** `src/lib/components/PostListPage.svelte`'s empty-state message.
+- **Symptom:** The empty-state text reads "Nothing in the index matches that filter. Two posts
+  so far — the archive is young." verbatim, regardless of how many posts actually exist.
+- **Cause:** This is literal, editorially-written copy from the BLOG-2 design handoff, not a
+  template — the handoff hardcodes it the same way. Auto-templating a real count in (e.g. "47
+  posts so far") would read as a non-sequitur next to "the archive is young", so it wasn't made
+  dynamic.
+- **Impact:** Low — cosmetic copy drift once the archive grows past a couple of posts. Nobody is
+  currently notified to revisit it.
+- **Workaround:** none; a human should update this string by hand once post count no longer
+  makes "two posts so far" true.
+- **Tracked:** not yet filed
+
+### `readTracker.isRead` has no callers after the BLOG-2 redesign
+
+- **Where:** `src/lib/storage.svelte.js`'s `ReadTracker.isRead`.
+- **Symptom:** Nothing reads `isRead` anymore — the old post-index checkmark it powered
+  (`PostSummary.svelte`'s `read-badge`) was dropped because the Defguard design handoff's post
+  index shows only title/author/date/tags ("nothing else — no excerpt, no reading time, no
+  status").
+- **Cause:** Deliberate design decision, not a bug.
+- **Impact:** None — `readTracker.markRead` (called from `PostDetailPage.svelte`) still runs on
+  every post view, so the underlying per-browser read-tracking data keeps being collected even
+  though no current screen displays it. Fine to wire `isRead` into a future screen, or remove it
+  if nothing ever does.
+- **Workaround:** none needed.
+- **Tracked:** not yet filed
+
 <!-- Add real entries below this line as they're found. Delete the example above once this
      file has at least one real entry, or leave it as a format reference — either is fine. -->
-
-### Post index's live text filter only searches the current page
-
-- **Where:** `blog/templates/blog/post_list.html`, `static/js/post-index.js`
-- **Symptom:** Typing in the "Filter posts, tags, authors…" box on the post index only
-  hides/shows rows already rendered on that page — it doesn't search posts on other pages of a
-  paginated result.
-- **Cause:** By design (BLOG-1 redesign): the box is a client-side-only progressive enhancement
-  matching the Defguard design handoff's "live-filter, no submit button" spec, which assumed an
-  unpaginated small post list. Tag filtering and sort (`?tag=`/`?sort=`/`?dir=`) are real
-  server-side query params that do cover the whole site and work with JS disabled; the real
-  full-text search at `/search/` also searches every published post's title/body server-side.
-- **Impact:** Low today (the blog has two posts, well under `PostListView.paginate_by = 10`).
-  Once post count regularly exceeds one page, the quick filter will feel incomplete for readers
-  who don't realize `/search/` exists for site-wide search.
-- **Workaround:** Use the header's "Search" link for a query that should cover every post, not
-  just the current page.
-- **Tracked:** not yet filed

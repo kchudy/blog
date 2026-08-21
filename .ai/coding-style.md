@@ -9,53 +9,65 @@
 
 ## Languages & formatting
 
-- **Formatter:** Ruff (`ruff format`), config in `pyproject.toml` — run automatically via
-  pre-commit and CI; do not hand-format.
-- **Linter:** Ruff (`ruff check`) with rules `E, F, I, UP, B, DJ` (the `DJ` set catches
-  Django-specific issues, e.g. a missing `related_name`, raw SQL). CI fails the build on lint
-  errors; treat warnings the same way unless a rule is disabled inline with a comment explaining
-  why.
-- **Type checking:** not enforced via mypy at this project's size — type hints are encouraged on
-  new functions/methods but not required. Revisit (add `django-stubs` + mypy to CI) if the
-  codebase grows enough that untyped code becomes a real source of bugs.
+- **Formatter:** Prettier (`prettier --write .`), config in `.prettierrc.json` (with
+  `prettier-plugin-svelte` for `.svelte` files) — run automatically via CI; do not hand-format.
+- **Linter:** ESLint (`eslint .`), flat config in `eslint.config.js` — `@eslint/js` recommended +
+  `eslint-plugin-svelte` recommended, with `eslint-config-prettier` disabling any stylistic rule
+  that would conflict with Prettier. CI fails the build on lint errors; treat warnings the same
+  way unless a rule is disabled inline with a comment explaining why (e.g. the
+  `svelte/no-at-html-tags` suppression in `PostDetailPage.svelte`, where the HTML being rendered
+  is already sanitized upstream).
+- **Type checking:** not enforced via TypeScript/JSDoc-checking at this project's size — plain
+  JavaScript throughout. Revisit if the codebase grows enough that untyped code becomes a real
+  source of bugs.
 
 ## Naming conventions
 
-- Files/modules: `snake_case.py`
-- Variables/functions: `snake_case`
-- Classes (models, forms, class-based views): `PascalCase`
+- Files/modules: `camelCase.js` for plain modules, `PascalCase.svelte` for components
+- Reactive (rune-using) plain modules: `name.svelte.js` — required by Svelte for `$state`/
+  `$derived`/etc. to work outside a `.svelte` file (see `src/lib/router.svelte.js`,
+  `src/lib/storage.svelte.js`)
+- Variables/functions: `camelCase`
+- Components (classes in the Svelte sense): `PascalCase`
 - Constants: `UPPER_SNAKE_CASE`
-- Templates: `snake_case.html`, namespaced one directory per app —
-  `blog/templates/blog/post_detail.html`, not a flat shared directory
-- Migrations: keep Django's auto-generated names for schema-only changes; give a hand-edited or
-  data migration an explicit descriptive name (e.g. `0007_backfill_post_slugs.py`)
+- Content files: `content/posts/<slug>.md` — filename doesn't have to match `slug` in
+  frontmatter, but keeping them the same makes a post easy to find
 
 ## Structure & patterns
 
-- Keep views thin: query/validation logic that's reused belongs on the model or a custom
-  manager (e.g. `Post.objects.published()`), not copy-pasted across views.
-- One app (`blog/`) for now — don't split into more apps until a second genuinely distinct
-  domain (e.g. a separate `newsletter` concern) shows up; a blog this size doesn't need an app
-  per model.
-- Validation belongs in a `forms.Form`/`forms.ModelForm`, not ad-hoc checks scattered in a view.
-- Settings live in a single `config/settings.py` reading configuration from environment
-  variables (12-factor style) — no `settings/base.py` + `dev.py` + `prod.py` split; that's more
-  indirection than a single-environment-per-deploy project needs.
-- New dependencies need a one-line note in the PR description explaining why Django or the
-  stdlib couldn't already do it.
+- Keep components thin: filtering/searching/pagination logic that's reused belongs in
+  `src/lib/posts.js` as a plain, testable function taking data as an argument — not copy-pasted
+  across components. See that file's functions (`search`, `filterByTag`, `paginate`,
+  `findBySlug`) for the pattern: pure functions over a `posts` array, not implicit access to the
+  generated data, specifically so tests can pass in fixtures.
+- `scripts/build-content.js` is the only place Markdown gets rendered/sanitized and the only
+  place "published" gets decided — don't duplicate either of those checks client-side.
+- `localStorage` (`src/lib/storage.svelte.js`) is for per-browser state only — never for anything
+  a post's author or another reader needs to see. If a feature needs that, it needs
+  `content/posts/` (build-time content) instead, not browser storage. See
+  `.ai/decisions/ADR-0004-rewrite-as-static-vite-svelte-site.md`.
+- New dependencies need a one-line note in the PR description explaining why the platform/stdlib
+  couldn't already do it.
 
 ## Testing expectations
 
-- **Framework:** pytest + `pytest-django`
-- **Coverage expectation:** every model method/manager and every view needs at least one test;
-  form validation edge cases (e.g. a duplicate slug) need explicit tests; templates get a smoke
-  test (status code + key expected content) rather than exhaustive HTML assertions.
-- **What must pass before a change is considered done:** `uv run ruff check . && uv run ruff
-  format --check . && uv run pytest` all green — see `.ai/workflow.yaml`'s `commands` for the
-  exact invocations the orchestrator runs automatically after implementation.
-- Prefer hitting real URLs through `pytest-django`'s `client` fixture over mocking view
-  internals; build test data with plain model instances/pytest fixtures rather than fixture JSON
-  files.
+- **Framework:** Vitest, with `@testing-library/svelte` for component tests (jsdom environment).
+- **Coverage expectation:** every exported function in `src/lib/posts.js` and every behavior of
+  `scripts/build-content.js` (published/draft/future filtering, sanitization, duplicate-slug/
+  missing-field validation) needs at least one test; components get a smoke test (renders the
+  expected content/heading, shows the right empty-state message) rather than exhaustive
+  interaction tests.
+- **What must pass before a change is considered done:** `npm run lint && npm run format:check &&
+npm test && npm run build` all green — see `.ai/workflow.yaml`'s `commands` for the exact
+  invocations the orchestrator runs automatically after implementation.
+- Component tests mock `../posts.js`/`../storage.svelte.js` with small fixture objects rather
+  than depending on `src/generated/posts.json` — see `PostListPage.test.js`/
+  `PostDetailPage.test.js` for the pattern. `scripts/build-content.test.js` instead writes real
+  temporary `.md` fixture files and calls `buildContent()` with overridden directories, since
+  that script's whole job _is_ reading files from disk.
+- `vitest.setup.js` registers `@testing-library/svelte`'s `cleanup()` in a global `afterEach` —
+  needed because this project doesn't set `test.globals: true` (see that file's comment), so
+  don't remove it or component tests will leak DOM state between `it()` blocks in the same file.
 
 ## Commit / branch conventions
 
@@ -70,11 +82,13 @@
 
 ## Review standards
 
-- No PR merges with a failing CI check (lint or test), no exceptions.
-- A view, model method, or form with non-obvious intent gets a short docstring — not just a
-  restatement of its signature.
-- Error handling: never swallow an exception silently; let it propagate or log it with context.
-  `DEBUG=False` in every deployed environment — no stack traces shown to visitors.
-- Security: never log secrets, `SECRET_KEY`, or DB credentials; keep Django's CSRF protection on
-  for every POST form; never `mark_safe`/`|safe` user-influenced content — post bodies go
-  through a Markdown-to-HTML step that must sanitize its output.
+- No PR merges with a failing CI check (lint, format, test, or build), no exceptions.
+- A component or function with non-obvious intent gets a short comment — not just a restatement
+  of its name.
+- Error handling: `localStorage` access is wrapped defensively (see `storage.svelte.js`'s
+  `safeGet`/`safeSet`) since it can throw (private browsing, quota, disabled storage) — a feature
+  built on it should degrade silently, not crash the page. Elsewhere, never swallow an exception
+  silently; let it propagate or log it with context.
+- Security: never `{@html}` content that hasn't been through `sanitize-html` first — post bodies
+  are sanitized once, at build time, in `scripts/build-content.js`; don't add a second
+  `{@html}` call elsewhere that bypasses it.

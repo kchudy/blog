@@ -1,0 +1,131 @@
+/* Design tokens ported from the Defguard Design System handoff (BLOG-2) — see
+   .ai/attachments/BLOG-2/.../design_handoff_blog_index/_ds/.../tokens/*.css for the source
+   values. This is the site's one token set; both the redesigned post index and the
+   not-yet-redesigned post detail/not-found pages draw from it (see App.svelte's `main.prose`). */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+  color-scheme: light;
+
+  --brand: #4976ff;
+  --brand-dark: #142040;
+  --brand-tint: #eaf0ff;
+
+  --ink: #111213;
+  --muted: #64666a;
+  --faint: #95989c;
+
+  --hair: #e1e2e3;
+  --hair2: #cdced1;
+
+  --paper: #ffffff;
+  --app: #f6f6f4;
+  --panel: #f6f6f4;
+  --hover: #fafafa;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --r4: 4px;
+  --r5: 5px;
+  --r6: 6px;
+
+  --dur-fast: 120ms;
+  --dur-base: 140ms;
+  --ease: ease;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --brand-tint: rgba(73, 118, 255, 0.16);
+
+  --ink: #f1f2f3;
+  --muted: #a1a4a9;
+  --faint: #6c7075;
+
+  --hair: #2a2b2d;
+  --hair2: #3d3e41;
+
+  --paper: #151617;
+  --app: #0d0e0f;
+  --panel: #242426;
+  --hover: #1e1f20;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+  background: var(--app);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--brand-dark);
+}
+
+.post-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+pre,
+code {
+  background: var(--panel);
+  border-radius: var(--r4);
+}
+
+pre {
+  padding: 0.75rem;
+  overflow-x: auto;
+}
+
+code {
+  padding: 0.1rem 0.3rem;
+}
+
+pre code {
+  padding: 0;
+  background: none;
+}
+
+blockquote {
+  border-left: 3px solid var(--hair);
+  margin-left: 0;
+  padding-left: 1rem;
+  color: var(--muted);
+}
+
+img {
+  max-width: 100%;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  border: 1px solid var(--hair);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}

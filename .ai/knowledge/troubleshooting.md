@@ -33,4 +33,19 @@ or a chat log.
   slightly different from what's committed. If you see this from the `@implementation` agent's
   feedback loop, it means its own change touched `package.json` without updating the lockfile.
 
+### `npm run lint` fails with dozens of `'React' is not defined` / `Empty block statement` errors under `.ai/attachments/...`
+
+- **Cause:** `.ai/attachments/<ISSUE>/<uuid>/...` holds design-handoff reference files (extracted
+  from an uploaded zip, e.g. a `_ds_bundle.js` React component bundle and a minified `support.js`
+  prototype runtime) that are gitignored (see `.ai/attachments/.gitignore`) but still present on
+  disk during a task run, and `eslint .`/`prettier --check .` scan the whole working directory by
+  default. Neither ESLint's `ignores` (`eslint.config.js`) nor `.prettierignore` excluded
+  `.ai/attachments/` before this was hit, so these vendored, non-project-convention files got
+  linted/formatted like app source.
+- **Fix:** `.ai/attachments/` is now in both `eslint.config.js`'s `ignores` array and
+  `.prettierignore`. If a future attachment path somehow still gets picked up (e.g. a differently
+  named folder under `.ai/`), broaden the ignore pattern rather than editing the vendored files.
+- **Notes:** These files are reference-only (a design handoff to read, not code to run through
+  this repo's lint/format rules) — never "fix" the errors inside them.
+
 <!-- Add real entries below this line as they're found. -->

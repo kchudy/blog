@@ -1,10 +1,6 @@
-__pycache__/
-*.pyc
-.venv/
-db.sqlite3
-staticfiles/*
-!staticfiles/.gitkeep
-.env
-.pytest_cache/
-.ruff_cache/
-*.egg-info/
+node_modules/
+dist/
+src/generated/
+public/feed.xml
+.vite/
+*.local

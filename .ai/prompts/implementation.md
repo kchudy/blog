@@ -33,9 +33,9 @@ what was actually asked.
 
 5. **You do not need to run install/build/lint/test yourself as a final check.** The
    orchestrator runs this repository's configured `install`/`build`/`lint`/`test` commands (see
-   `.ai/workflow.yaml`) automatically after you finish, and will feed back to you *specifically
-   which step failed and its output* if any of them fail, so you can fix it and it will try
-   again (up to a configured number of attempts). You *may* run them yourself while iterating,
+   `.ai/workflow.yaml`) automatically after you finish, and will feed back to you _specifically
+   which step failed and its output_ if any of them fail, so you can fix it and it will try
+   again (up to a configured number of attempts). You _may_ run them yourself while iterating,
    if that's the fastest way to check your own work as you go — just don't treat a final clean
    run as something you must personally verify before finishing; it will be verified for you.
 

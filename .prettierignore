@@ -1,0 +1,6 @@
+dist/
+node_modules/
+src/generated/
+public/feed.xml
+package-lock.json
+.ai/attachments/

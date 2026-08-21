@@ -66,41 +66,21 @@ which changes were AI-assisted after the fact.
      recurring way tests are structured, a naming quirk for template partials) should add it
      here rather than leaving it to be rediscovered. -->
 
-## Database configuration defaults to SQLite locally, Postgres in deployment
+## The GitHub Pages base path lives in exactly one file
 
-`config/settings.py` reads `DATABASE_URL` via `django-environ`'s `env.db()`, defaulting to a
-local `db.sqlite3` file when the variable is unset. This keeps `manage.py`/`pytest` runnable
-with zero setup (no Postgres needed for the orchestrator's `install`/`build`/`test` commands or
-for a contributor's first `git clone`), while `docker-compose.yml` sets a real
-`postgres://...` `DATABASE_URL` for the `web` service so deployed environments still use
-Postgres 17 as documented in `.ai/project.md`. If a change ever depends on Postgres-only
-behavior (e.g. a specific field type or full-text search), it needs a Postgres-backed test
-setup — don't assume the default sqlite fallback is what CI/tests exercise.
+`site.config.js`'s `BASE_PATH`/`SITE_URL` are imported by both `vite.config.js` (so built asset
+URLs resolve under `/blog/`) and `scripts/build-content.js` (so RSS `<link>`/`<guid>` URLs are
+correct absolute links). Update the path in `site.config.js` only — duplicating it into either
+consumer directly is exactly the kind of drift that quietly breaks either asset loading or the
+feed depending on which copy goes stale. See
+`.ai/decisions/ADR-0004-rewrite-as-static-vite-svelte-site.md`.
 
-## Static file storage is not manifest-based
+## Content and app code are tested with different strategies, deliberately
 
-`STORAGES["staticfiles"]` uses plain `django.contrib.staticfiles.storage.StaticFilesStorage`
-rather than a hashed/manifest storage (e.g. WhiteNoise's `CompressedManifestStaticFilesStorage`).
-A manifest storage requires `collectstatic` to have run before `{% static %}` can resolve a URL,
-which would otherwise break template rendering in tests that never call `collectstatic`. Revisit
-if far-future cache headers on hashed filenames become worth adding a `collectstatic` step to
-the test/dev workflow.
-
-## Query-string filter/sort params are whitelisted, never passed straight to `order_by()`/`filter()`
-
-`PostListView` (BLOG-1 redesign, `blog/views.py`) accepts `?tag=`, `?sort=`, `?dir=` from
-readers to drive the post index's tag rail and sort control. `sort`/`dir` are checked against an
-explicit `SORT_FIELDS`/`{"asc", "desc"}` whitelist before ever reaching `.order_by()` — an
-unvalidated field name from the query string into `order_by()` would let a reader probe arbitrary
-model fields or trigger a 500 on a bogus one. `tag` is safe to pass straight into
-`.filter(tags__slug=...)` unvalidated since a non-matching slug just yields an empty queryset,
-not an error. Follow the same whitelist-before-`order_by()` pattern for any future
-user-controlled sort/filter param.
-
-## Building "same page, different query param" links: `_url()` helper on the view
-
-`PostListView._url(**overrides)` copies `request.GET`, always re-asserts the current `sort`/
-`dir` (so switching tags doesn't silently reset sort), drops `page` (so any filter/sort change
-starts back at page 1), and drops `tag` unless explicitly passed (most callers either set it to
-a specific value or want it cleared). Reuse this pattern rather than hand-building query strings
-in templates if another view grows multiple combinable query-string filters.
+`scripts/build-content.test.js` writes real temporary `.md` files to disk and calls
+`buildContent()` with directory overrides, because that script's entire job is reading files —
+faking that away would test nothing real. Component tests
+(`PostListPage.test.js`/`PostDetailPage.test.js`) do the opposite: they mock `../posts.js` (and
+`../storage.svelte.js` where relevant) with small inline fixture objects rather than depending on
+`src/generated/posts.json` existing on disk. Don't "fix" one to look like the other — match the
+strategy to what's actually being tested, per `.ai/coding-style.md`'s testing section.

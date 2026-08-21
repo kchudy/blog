@@ -24,7 +24,7 @@ implementation agent has a clear approach to follow rather than inventing one mi
      around (e.g. "this touches the same table as issue DG-30, worth checking for conflicts").
 
 3. **Write a technical design when the change is non-trivial.** For anything more involved than
-   a small, obviously-scoped change, put the design in a comment on the issue *and* keep it
+   a small, obviously-scoped change, put the design in a comment on the issue _and_ keep it
    findable: if the decision is significant enough to matter later (a new pattern, a new
    dependency, a schema change, a reversal of a previous decision), record it as an ADR — see
    below. Small, purely-mechanical changes don't need an ADR; use judgment.
