@@ -6,11 +6,32 @@ from django.utils import timezone
 from blog.markdown import render_markdown
 
 
+class TagQuerySet(models.QuerySet):
+    def with_post_counts(self, posts):
+        """Tags actually used by `posts`, annotated with `post_count` and ordered by first use.
+
+        Used by the post index's tag rail, which needs a per-tag count and a stable "first-seen"
+        order rather than alphabetical — both computed relative to whatever queryset (e.g.
+        published posts) the caller passes in, not all posts ever tagged.
+        """
+        in_posts = models.Q(posts__in=posts)
+        return (
+            self.annotate(
+                post_count=models.Count("posts", filter=in_posts, distinct=True),
+                first_seen=models.Min("posts__published_at", filter=in_posts),
+            )
+            .filter(post_count__gt=0)
+            .order_by("first_seen", "name")
+        )
+
+
 class Tag(models.Model):
     """A short label used to group related posts."""
 
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(max_length=60, unique=True)
+
+    objects = TagQuerySet.as_manager()
 
     class Meta:
         ordering = ["name"]

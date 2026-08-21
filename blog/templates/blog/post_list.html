@@ -1,28 +1,132 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Blog{% endblock %}
+{% block title %}Posts{% endblock %}
 
 {% block content %}
-  <h1>Posts</h1>
+<div class="page page--with-rail">
+  <aside class="rail">
+    <div>
+      <div class="rail__section-label">Tags</div>
+      {% for tag in tag_nav %}
+        <a class="rail__tag{% if tag.active %} is-active{% endif %}" href="{{ tag.url }}">
+          <span class="rail__tag-label">{{ tag.label }}</span>
+          <span class="rail__tag-count">{{ tag.count|stringformat:"02d" }}</span>
+        </a>
+      {% endfor %}
+    </div>
 
-  {% include "blog/_search_form.html" %}
+    {% if archive %}
+      <div>
+        <div class="rail__section-label">Archive</div>
+        {% for bucket in archive %}
+          <div class="rail__archive-row">
+            <span class="rail__archive-label">{{ bucket.month|date:"Y-m" }}</span>
+            <span class="rail__archive-count">{{ bucket.count|stringformat:"02d" }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
 
-  {% if posts %}
-    {% for post in posts %}
-      {% include "blog/_post_summary.html" %}
-    {% endfor %}
-  {% else %}
-    <p>No posts yet.</p>
-  {% endif %}
+    <div class="rail__footer">
+      Written by the people who run it. Notes on WireGuard, identity and the boring parts of
+      uptime.
+    </div>
+  </aside>
 
-  {% if is_paginated %}
-    <nav>
-      {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+  <main>
+    <div class="kicker">Index</div>
+    <h1 class="page-title">Posts</h1>
+    <p class="deck">
+      Field notes from the infrastructure and security team — deployments, packet captures, and
+      the write-ups we wish we had found first.
+    </p>
+
+    <div class="controls">
+      <label class="search-box">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="M21 21l-4.3-4.3"></path>
+        </svg>
+        <span class="visually-hidden">Filter posts on this page</span>
+        <input type="text" id="post-filter" placeholder="Filter posts, tags, authors…" autocomplete="off">
+      </label>
+      <div class="sort-group">
+        <span class="sort-group__label">Sort</span>
+        <div class="sort-group__buttons">
+          {% for sort in sort_options %}
+            <a href="{{ sort.url }}">
+              <span class="sort-btn{% if sort.active %} is-active{% endif %}">
+                <span>{{ sort.label }}</span>
+                {% if sort.active %}<span class="sort-btn__arrow">{{ sort.arrow }}</span>{% endif %}
+              </span>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="result-meta">
+      <span class="result-meta__count" id="result-count" data-total="{{ total_published_posts }}">showing {{ page_obj.paginator.count }} / {{ total_published_posts }}</span>
+      {% if has_filter %}
+        <a class="result-meta__clear" href="{{ clear_url }}">
+          <span>clear #{{ active_tag }}</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"></path>
+          </svg>
+        </a>
       {% endif %}
-      {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}">Next</a>
-      {% endif %}
-    </nav>
-  {% endif %}
+    </div>
+
+    {% if posts %}
+      <div class="post-list" id="post-list">
+        {% for post in posts %}
+          {% include "blog/_post_summary.html" with index=forloop.counter0|add:page_obj.start_index %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state__title">No matches</div>
+        <p class="empty-state__body">
+          Nothing in the index matches that filter.
+          {{ total_published_posts }} post{{ total_published_posts|pluralize }} so far — the
+          archive is young.
+        </p>
+        <a class="btn btn--ghost btn--sm" href="{{ clear_url }}">Clear filters</a>
+      </div>
+    {% endif %}
+
+    <div class="empty-state" id="js-empty-state" hidden>
+      <div class="empty-state__title">No matches</div>
+      <p class="empty-state__body">Nothing on this page matches that filter.</p>
+      <button type="button" class="btn btn--ghost btn--sm" id="js-clear-filter">Clear filters</button>
+    </div>
+
+    {% if is_paginated %}
+      <nav class="pagination">
+        {% if previous_page_url %}
+          <a href="{{ previous_page_url }}">Previous</a>
+        {% else %}
+          <span></span>
+        {% endif %}
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if next_page_url %}
+          <a href="{{ next_page_url }}">Next</a>
+        {% else %}
+          <span></span>
+        {% endif %}
+      </nav>
+    {% endif %}
+
+    <div class="footer-strip">
+      <span>{{ total_published_posts }} entr{{ total_published_posts|pluralize:"y,ies" }} &middot; {{ distinct_tag_count }} tag{{ distinct_tag_count|pluralize }} &middot; {{ distinct_author_count }} author{{ distinct_author_count|pluralize }}</span>
+      <span class="footer-strip__rule" aria-hidden="true"></span>
+      <span>updated {% now "Y-m-d" %}</span>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/post-index.js' %}"></script>
 {% endblock %}

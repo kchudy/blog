@@ -3,16 +3,31 @@
 {% block title %}{{ post.title }}{% endblock %}
 
 {% block content %}
+<div class="page">
+  <a class="breadcrumb" href="{% url 'blog:post_list' %}">&larr; All posts</a>
+
   <article>
-    <h1>{{ post.title }}</h1>
-    <p class="post-meta">
-      By {{ post.author }} &middot; {{ post.published_at|date:"F j, Y" }}
-      {% if post.tags.all %}
-        &middot;
-        {% for tag in post.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
-      {% endif %}
-    </p>
-    {{ post.body_html|safe }}
+    <header class="post-header">
+      <div class="kicker">Article</div>
+      <h1 class="page-title">{{ post.title }}</h1>
+      <div class="post-header__meta">
+        <span class="post-row__author">{{ post.author }}</span>
+        <span class="post-row__meta-divider" aria-hidden="true"></span>
+        <time class="post-row__date" datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"Y-m-d" }}</time>
+        {% if post.tags.all %}
+          <span class="post-row__meta-divider" aria-hidden="true"></span>
+          <ul class="tag-list">
+            {% for tag in post.tags.all %}
+              <li><a class="tag" href="{% url 'blog:post_list' %}?tag={{ tag.slug|urlencode }}">{{ tag.name }}</a></li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    </header>
+
+    <div class="post-body">
+      {{ post.body_html|safe }}
+    </div>
   </article>
-  <p><a href="{% url 'blog:post_list' %}">&larr; Back to all posts</a></p>
+</div>
 {% endblock %}

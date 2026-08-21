@@ -43,3 +43,21 @@ commit/PR so it's traceable).
 
 <!-- Add real entries below this line as they're found. Delete the example above once this
      file has at least one real entry, or leave it as a format reference — either is fine. -->
+
+### Post index's live text filter only searches the current page
+
+- **Where:** `blog/templates/blog/post_list.html`, `static/js/post-index.js`
+- **Symptom:** Typing in the "Filter posts, tags, authors…" box on the post index only
+  hides/shows rows already rendered on that page — it doesn't search posts on other pages of a
+  paginated result.
+- **Cause:** By design (BLOG-1 redesign): the box is a client-side-only progressive enhancement
+  matching the Defguard design handoff's "live-filter, no submit button" spec, which assumed an
+  unpaginated small post list. Tag filtering and sort (`?tag=`/`?sort=`/`?dir=`) are real
+  server-side query params that do cover the whole site and work with JS disabled; the real
+  full-text search at `/search/` also searches every published post's title/body server-side.
+- **Impact:** Low today (the blog has two posts, well under `PostListView.paginate_by = 10`).
+  Once post count regularly exceeds one page, the quick filter will feel incomplete for readers
+  who don't realize `/search/` exists for site-wide search.
+- **Workaround:** Use the header's "Search" link for a query that should cover every post, not
+  just the current page.
+- **Tracked:** not yet filed

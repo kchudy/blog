@@ -1,13 +1,25 @@
-<article class="post-summary">
-  <h2><a href="{% url 'blog:post_detail' post.slug %}">{{ post.title }}</a></h2>
-  <p class="post-meta">
-    By {{ post.author }} &middot; {{ post.published_at|date:"F j, Y" }}
-    {% if post.tags.all %}
-      &middot;
-      {% for tag in post.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+<article class="post-row" data-search="{{ post.title }} {{ post.author }} {% for tag in post.tags.all %}{{ tag.name }} {% endfor %}">
+  <span class="post-row__num">{{ index|stringformat:"03d" }}</span>
+  <div class="post-row__body">
+    <a class="post-row__title" href="{% url 'blog:post_detail' post.slug %}">{{ post.title }}</a>
+    <div class="post-row__meta">
+      <span class="post-row__author">{{ post.author }}</span>
+      <span class="post-row__meta-divider" aria-hidden="true"></span>
+      <time class="post-row__date" datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"Y-m-d" }}</time>
+      {% if post.tags.all %}
+        <span class="post-row__meta-divider" aria-hidden="true"></span>
+        <ul class="tag-list">
+          {% for tag in post.tags.all %}
+            <li>
+              <a class="tag{% if tag.slug == active_tag %} tag--brand{% endif %}" href="{% url 'blog:post_list' %}?tag={{ tag.slug|urlencode }}">{{ tag.name }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+    {% if show_excerpt %}
+      <p class="post-row__excerpt">{{ post.body_html|striptags|truncatewords:30 }}</p>
     {% endif %}
-  </p>
-  {% if show_excerpt %}
-    <p class="post-excerpt">{{ post.body_html|striptags|truncatewords:30 }}</p>
-  {% endif %}
+  </div>
+  <span class="post-row__affordance">Read</span>
 </article>

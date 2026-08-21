@@ -3,33 +3,50 @@
 {% block title %}Search{% if query %} results for &quot;{{ query }}&quot;{% endif %}{% endblock %}
 
 {% block content %}
-  <h1>Search</h1>
+<div class="page">
+  <div class="kicker">Search</div>
+  <h1 class="page-title">Search</h1>
+  <p class="deck">Full-text search across every published post's title and body.</p>
 
   {% include "blog/_search_form.html" %}
 
   {% if query %}
     {% if posts %}
-      {% for post in posts %}
-        {% include "blog/_post_summary.html" with show_excerpt=True %}
-      {% endfor %}
+      <div class="result-meta">
+        <span class="result-meta__count">showing {{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }} for &quot;{{ query }}&quot;</span>
+      </div>
+      <div class="post-list">
+        {% for post in posts %}
+          {% include "blog/_post_summary.html" with index=forloop.counter0|add:page_obj.start_index show_excerpt=True %}
+        {% endfor %}
+      </div>
 
       {% if is_paginated %}
-        <nav>
+        <nav class="pagination">
           {% if page_obj.has_previous %}
             <a href="?q={{ query|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>
+          {% else %}
+            <span></span>
           {% endif %}
+          <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
           {% if page_obj.has_next %}
             <a href="?q={{ query|urlencode }}&amp;page={{ page_obj.next_page_number }}">Next</a>
+          {% else %}
+            <span></span>
           {% endif %}
         </nav>
       {% endif %}
     {% else %}
-      <p>
-        No articles found for &quot;{{ query }}&quot;.
-        <a href="{% url 'blog:post_list' %}">Browse all articles</a>.
-      </p>
+      <div class="empty-state">
+        <div class="empty-state__title">No matches</div>
+        <p class="empty-state__body">
+          No articles found for &quot;{{ query }}&quot;.
+          <a class="link" href="{% url 'blog:post_list' %}">Browse all posts</a>.
+        </p>
+      </div>
     {% endif %}
   {% else %}
-    <p>Enter a search term above to find articles.</p>
+    <p class="deck">Enter a search term above to find posts.</p>
   {% endif %}
+</div>
 {% endblock %}

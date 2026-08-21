@@ -4,16 +4,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Blog{% endblock %}</title>
-  <link rel="alternate" type="application/rss+xml" title="Blog RSS Feed" href="{% url 'blog:feed' %}">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block title %}Posts{% endblock %} · infra/notes</title>
+  <link rel="alternate" type="application/rss+xml" title="infra/notes RSS Feed" href="{% url 'blog:feed' %}">
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <script>
+    /* Applied before first paint to avoid a light/dark flash — see static/js/theme.js for the
+       toggle button behavior this pairs with. */
+    (function () {
+      var stored = localStorage.getItem("theme");
+      var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.setAttribute("data-theme", stored || (prefersDark ? "dark" : "light"));
+    })();
+  </script>
 </head>
 <body>
-  <header>
-    <a href="{% url 'blog:post_list' %}">Blog</a>
+  <header class="topbar">
+    <a class="topbar__home" href="{% url 'blog:post_list' %}">
+      <span class="topbar__mark" aria-hidden="true"></span>
+      <span class="topbar__wordmark">infra/notes</span>
+    </a>
+    <span class="topbar__divider" aria-hidden="true"></span>
+    <span class="topbar__tagline">Engineering blog</span>
+    <nav class="topbar__nav" aria-label="Primary">
+      <a href="{% url 'blog:search' %}">Search</a>
+      <a href="{% url 'blog:feed' %}">RSS</a>
+    </nav>
+    <span class="topbar__spacer"></span>
+    <span class="topbar__count">{{ total_published_posts|stringformat:"02d" }} posts</span>
+    <span class="topbar__divider" aria-hidden="true"></span>
+    <button id="theme-toggle" class="btn btn--ghost btn--sm" type="button" aria-label="Toggle dark mode">Dark</button>
   </header>
+  <div class="accent-bar" aria-hidden="true"></div>
   <main>
     {% block content %}{% endblock %}
   </main>
+  <script src="{% static 'js/theme.js' %}"></script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

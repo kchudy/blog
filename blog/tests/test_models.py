@@ -1,6 +1,9 @@
-import pytest
+from datetime import timedelta
 
-from blog.models import Post
+import pytest
+from django.utils import timezone
+
+from blog.models import Post, Tag
 
 pytestmark = pytest.mark.django_db
 
@@ -59,3 +62,40 @@ class TestPostBodyHtml:
 class TestTag:
     def test_str_returns_name(self, tag):
         assert str(tag) == "Django"
+
+
+class TestTagWithPostCounts:
+    def test_counts_only_posts_in_the_given_queryset(self, published_post, draft_post, tag):
+        draft_post.tags.add(tag)
+        result = Tag.objects.with_post_counts(Post.objects.published())
+        assert [t.post_count for t in result if t.slug == tag.slug] == [1]
+
+    def test_excludes_tags_with_no_matching_posts(self, published_post):
+        unused = Tag.objects.create(name="Unused", slug="unused")
+        result = Tag.objects.with_post_counts(Post.objects.published())
+        assert unused not in result
+
+    def test_orders_by_first_use(self, author):
+        early_tag = Tag.objects.create(name="Early", slug="early")
+        late_tag = Tag.objects.create(name="Late", slug="late")
+        early_post = Post.objects.create(
+            title="Early Post",
+            slug="early-post",
+            body="Early.",
+            author=author,
+            status=Post.Status.PUBLISHED,
+            published_at=timezone.now() - timedelta(days=10),
+        )
+        early_post.tags.add(late_tag)
+        late_post = Post.objects.create(
+            title="Late Post",
+            slug="late-post",
+            body="Late.",
+            author=author,
+            status=Post.Status.PUBLISHED,
+            published_at=timezone.now() - timedelta(days=1),
+        )
+        late_post.tags.add(early_tag)
+
+        result = list(Tag.objects.with_post_counts(Post.objects.published()))
+        assert [t.slug for t in result] == ["late", "early"]

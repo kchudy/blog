@@ -85,3 +85,22 @@ A manifest storage requires `collectstatic` to have run before `{% static %}` ca
 which would otherwise break template rendering in tests that never call `collectstatic`. Revisit
 if far-future cache headers on hashed filenames become worth adding a `collectstatic` step to
 the test/dev workflow.
+
+## Query-string filter/sort params are whitelisted, never passed straight to `order_by()`/`filter()`
+
+`PostListView` (BLOG-1 redesign, `blog/views.py`) accepts `?tag=`, `?sort=`, `?dir=` from
+readers to drive the post index's tag rail and sort control. `sort`/`dir` are checked against an
+explicit `SORT_FIELDS`/`{"asc", "desc"}` whitelist before ever reaching `.order_by()` — an
+unvalidated field name from the query string into `order_by()` would let a reader probe arbitrary
+model fields or trigger a 500 on a bogus one. `tag` is safe to pass straight into
+`.filter(tags__slug=...)` unvalidated since a non-matching slug just yields an empty queryset,
+not an error. Follow the same whitelist-before-`order_by()` pattern for any future
+user-controlled sort/filter param.
+
+## Building "same page, different query param" links: `_url()` helper on the view
+
+`PostListView._url(**overrides)` copies `request.GET`, always re-asserts the current `sort`/
+`dir` (so switching tags doesn't silently reset sort), drops `page` (so any filter/sort change
+starts back at page 1), and drops `tag` unless explicitly passed (most callers either set it to
+a specific value or want it cleared). Reuse this pattern rather than hand-building query strings
+in templates if another view grows multiple combinable query-string filters.
