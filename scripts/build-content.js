@@ -23,6 +23,9 @@ const ROOT = path.resolve(__dirname, "..");
 const CONTENT_DIR = path.join(ROOT, "content", "posts");
 const OUT_DIR = path.join(ROOT, "src", "generated");
 const PUBLIC_DIR = path.join(ROOT, "public");
+const PACKAGE_VERSION = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "package.json"), "utf-8"),
+).version;
 const FEED_LIMIT = 20;
 const EXCERPT_WORD_LIMIT = 30;
 const REQUIRED_FIELDS = ["title", "slug", "author", "published_at"];
@@ -199,17 +202,23 @@ export function buildContent({
     .map(({ sourceFile: _sourceFile, ...post }) => post);
 
   const tags = [...new Set(published.flatMap((post) => post.tags))].sort();
+  // Surfaced in the post index's footer strip ("index built <date> · v<version>") — computed
+  // here, at build time, since that's the only place that knows when "now" actually is.
+  const meta = {
+    builtAt: now.toISOString().slice(0, 10),
+    version: PACKAGE_VERSION,
+  };
 
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(
     path.join(outDir, "posts.json"),
-    JSON.stringify({ posts: published, tags }, null, 2),
+    JSON.stringify({ posts: published, tags, meta }, null, 2),
   );
 
   fs.mkdirSync(publicDir, { recursive: true });
   fs.writeFileSync(path.join(publicDir, "feed.xml"), buildFeedXml(published));
 
-  return { posts: published, tags };
+  return { posts: published, tags, meta };
 }
 
 const isMain =

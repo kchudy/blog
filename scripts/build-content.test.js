@@ -267,4 +267,15 @@ describe("buildContent", () => {
     const { tags } = buildContent({ ...dirs, now: new Date("2024-01-01") });
     expect(tags).toEqual(["django", "svelte"]);
   });
+
+  it("stamps the build date and package version into meta", () => {
+    dirs = makeDirs();
+
+    const { meta } = buildContent({ ...dirs, now: new Date("2024-03-15") });
+
+    expect(meta.builtAt).toBe("2024-03-15");
+    expect(meta.version).toBe(
+      JSON.parse(fs.readFileSync("package.json", "utf-8")).version,
+    );
+  });
 });
