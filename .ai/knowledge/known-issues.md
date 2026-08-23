@@ -41,20 +41,6 @@ commit/PR so it's traceable).
   than double-clicking to open in Excel.
 - **Tracked:** not yet filed
 
-### `PostSummary.svelte` is dead code left over from the BLOG-2 redesign
-
-- **Where:** `src/lib/components/PostSummary.svelte`.
-- **Symptom:** The file still exists and still compiles, but nothing imports it —
-  `PostListPage.svelte` now renders `PostRow.svelte` instead (per the Defguard design handoff's
-  post index redesign).
-- **Cause:** The implementation agent that did the redesign had no file-delete-capable tool
-  available in its environment for that run, so it could add `PostRow.svelte` but couldn't
-  remove the file it replaced.
-- **Impact:** None functionally (lint/format/test/build all pass with it present) — just cruft.
-- **Workaround:** `git rm src/lib/components/PostSummary.svelte` whenever someone with normal
-  shell access next touches this area.
-- **Tracked:** not yet filed
-
 ### Post index empty-state copy hardcodes "Two posts so far"
 
 - **Where:** `src/lib/components/PostListPage.svelte`'s empty-state message.
@@ -73,10 +59,9 @@ commit/PR so it's traceable).
 ### `readTracker.isRead` has no callers after the BLOG-2 redesign
 
 - **Where:** `src/lib/storage.svelte.js`'s `ReadTracker.isRead`.
-- **Symptom:** Nothing reads `isRead` anymore — the old post-index checkmark it powered
-  (`PostSummary.svelte`'s `read-badge`) was dropped because the Defguard design handoff's post
-  index shows only title/author/date/tags ("nothing else — no excerpt, no reading time, no
-  status").
+- **Symptom:** Nothing reads `isRead` anymore — the old post-index checkmark it powered (in the
+  now-removed `PostSummary.svelte`) was dropped because the Defguard design handoff's post index
+  shows only title/author/date/tags ("nothing else — no excerpt, no reading time, no status").
 - **Cause:** Deliberate design decision, not a bug.
 - **Impact:** None — `readTracker.markRead` (called from `PostDetailPage.svelte`) still runs on
   every post view, so the underlying per-browser read-tracking data keeps being collected even
