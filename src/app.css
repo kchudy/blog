@@ -7,9 +7,9 @@
 :root {
   color-scheme: light;
 
-  --brand: #4976ff;
-  --brand-dark: #142040;
-  --brand-tint: #eaf0ff;
+  --brand: #e91e8c;
+  --brand-dark: #4a0f30;
+  --brand-tint: #fceaf3;
 
   --ink: #111213;
   --muted: #64666a;
@@ -38,7 +38,7 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --brand-tint: rgba(73, 118, 255, 0.16);
+  --brand-tint: rgba(233, 30, 140, 0.16);
 
   --ink: #f1f2f3;
   --muted: #a1a4a9;
