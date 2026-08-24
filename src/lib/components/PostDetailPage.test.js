@@ -19,7 +19,7 @@ vi.mock("../posts.js", () => ({
 }));
 
 vi.mock("../storage.svelte.js", () => ({
-  readTracker: { isRead: () => false, markRead: () => {} },
+  readTracker: { markRead: () => {} },
 }));
 
 describe("PostDetailPage", () => {

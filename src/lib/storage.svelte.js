@@ -58,10 +58,6 @@ function readSlugSet() {
 class ReadTracker {
   #slugs = $state(readSlugSet());
 
-  isRead(slug) {
-    return this.#slugs.has(slug);
-  }
-
   markRead(slug) {
     if (this.#slugs.has(slug)) return;
     const next = new SvelteSet(this.#slugs);
